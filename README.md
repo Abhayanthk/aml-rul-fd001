@@ -46,7 +46,6 @@ notebooks/
   04_tree_models.ipynb        Random Forest and gradient boosting           Srijan
   05_final_evaluation.ipynb   all models on validation and test, early/late Ashrith
 results/                      predictions and final results (written by the notebooks)
-members/                      each member's instructions and check numbers
 ```
 
 ## How to run
@@ -64,13 +63,13 @@ Run the notebooks in order: 01 → 02 → 03 → 04 → 05.
 
 ## Team
 
-| Member | Part | Instructions |
-| --- | --- | --- |
-| Aryan | Data loading, RUL label, exploratory analysis, flat-sensor removal | [members/aryan.md](members/aryan.md) |
-| Srijan | Tree models: Random Forest and gradient boosting | [members/srijan.md](members/srijan.md) |
-| Abhayanth | Engine split, validation points, metrics, linear models | [members/abhayanth.md](members/abhayanth.md) |
-| Akhil | Rolling features | [members/akhil.md](members/akhil.md) |
-| Ashrith | Final evaluation: validation and test, early/late breakdown | [members/ashrith.md](members/ashrith.md) |
+| Member | Part |
+| --- | --- |
+| Aryan | Data loading, RUL label, exploratory analysis, flat-sensor removal |
+| Srijan | Tree models: Random Forest and gradient boosting |
+| Abhayanth | Engine split, validation points, metrics, linear models |
+| Akhil | Rolling features |
+| Ashrith | Final evaluation: validation and test, early/late breakdown |
 
 Work order (each part needs the previous one merged): Aryan → Akhil → Abhayanth → Srijan → Ashrith.
 

@@ -46,7 +46,15 @@ notebooks/
   04_tree_models.ipynb        Random Forest and gradient boosting           Srijan
   05_final_evaluation.ipynb   all models on validation and test, early/late Ashrith
 results/                      predictions and final results (written by the notebooks)
+report/
+  RUL_Report.pdf              project report
+  RUL_Presentation.pdf        presentation slides
 ```
+
+## Report
+
+- [Project report](report/RUL_Report.pdf)
+- [Presentation slides](report/RUL_Presentation.pdf)
 
 ## How to run
 

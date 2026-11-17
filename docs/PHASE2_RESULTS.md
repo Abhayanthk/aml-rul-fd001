@@ -232,9 +232,9 @@ Also tried and rejected: RMSprop (worse for both), dropout 0.5 (worse, unstable)
 
 ## Where the numbers come from
 
-- `scripts/score_all_models.py` scores every prediction file in `results/` and writes `results/all_models_metrics.csv`, the source of both tables above. Run it from the repo root.
-- Each Phase 2 prediction file has 5 seed columns: validation rows follow `data/validation_cutoffs.csv`, test rows follow engine id.
-- LSTM, 1D CNN, hybrid and GB-fallback files come from notebooks 07, 08 and 09. GRU, RNN, CNN-LSTM and classifier files come from the Phase 2 exploration runs with the same settings and seeds; the GRU and RNN validation scores match notebook 08's 5-seed ladder exactly. Blends are computed from the GB and DL files with the weights in `results/experiments_blends.csv`.
+- Each Phase 2 model is scored per seed (5 seeds) and averaged; validation rows follow `data/validation_cutoffs.csv`, test rows follow engine id.
+- LSTM, 1D CNN, hybrid and GB-fallback numbers come from the prediction files made by notebooks 07, 08 and 09. GRU, RNN, CNN-LSTM and classifier numbers come from the Phase 2 exploration runs with the same settings and seeds; the GRU and RNN validation scores match notebook 08's 5-seed ladder exactly. Blends use the weights in `results/experiments_blends.csv`.
+- The final comparison notebook (notebook 10) will reproduce these tables in the repo.
 - Experiments behind each setting: `results/experiments_*.csv`.
 
 ---

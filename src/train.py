@@ -188,15 +188,15 @@ def run_seeds(make_model, W, seeds, cap=None, lr=1e-3, verbose=True):
 
 
 def summarise(val_preds, setting):
-    """One experiments_*.csv row: score each seed, then the mean over seeds (std = numpy default, ddof 0)."""
+    """One experiments_*.csv row: score each seed, then the mean over seeds and the sample std (ddof 1)."""
     scores = [score_bands(val_rul(), p) for p in val_preds]
     rmses = np.array([s["rmse"] for s in scores])
     late = np.array([s["late_rmse"] for s in scores])
     return {
         "setting": setting,
         "rmse_mean": rmses.mean(),
-        "rmse_std": rmses.std(),
+        "rmse_std": rmses.std(ddof=1),
         "late_rmse_mean": late.mean(),
-        "late_rmse_std": late.std(),
+        "late_rmse_std": late.std(ddof=1),
         "early_rmse_mean": np.mean([s["early_rmse"] for s in scores]),
     }

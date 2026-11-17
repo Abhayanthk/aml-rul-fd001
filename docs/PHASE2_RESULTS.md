@@ -31,13 +31,13 @@ last 70 cycles ──> capped LSTM ──> prediction p
 - The **capped LSTM** is the expert on engines near failure. It is the most accurate model on late points.
 - It was trained never to say much above 125, so when it predicts **more than 115** the engine is probably healthy and the answer is handed to the **uncapped LSTM**, which can predict 200 or 300. We keep the larger of the two predictions: the gate has already judged the engine healthy, so a lower number from the uncapped model would contradict it.
 
-**Why this one:** on validation it is the only model that is good at both jobs. It has the lowest overall RMSE (35.34) and close to the lowest late RMSE (14.76). It was chosen on validation **before** the test set was scored.
+**Why this one:** on validation it is the only model that is good at both jobs. It has the lowest overall RMSE (34.78) and close to the lowest late RMSE (15.15). It was chosen on validation **before** the test set was scored.
 
 ---
 
 ## Results
 
-Phase 1 rows are single runs. Phase 2 rows are the mean of 5 seeds (± = spread between seeds). All errors are in cycles; lower is better.
+Phase 1 rows are single runs. Phase 2 rows are the mean of 5 seeds (± = sample std between seeds), scored from the prediction files in `results/`. All errors are in cycles; lower is better.
 
 ### Validation (100 points: 22 early, 78 late)
 
@@ -47,11 +47,12 @@ Phase 1 rows are single runs. Phase 2 rows are the mean of 5 seeds (± = spread 
 | 1 | Elastic Net | 31.66 | 41.77 | 66.02 | 31.74 |
 | 1 | Random Forest | 25.03 | 40.17 | 69.59 | 26.50 |
 | 1 | Gradient boosting | 26.12 | 40.17 | 69.54 | 26.54 |
-| 2 | LSTM uncapped | 23.27 | 36.47 ± 3.80 | **64.16** | 23.22 |
-| 2 | LSTM capped | 20.84 | 39.62 ± 0.29 | 81.29 | **12.16** |
-| 2 | 1D CNN uncapped | 25.67 | 41.12 ± 2.29 | 74.29 | 24.54 |
-| 2 | 1D CNN capped | 23.22 | 41.76 ± 0.96 | 84.74 | 14.46 |
-| 2 | **Two-stage hybrid (final)** | **19.94** | **35.34 ± 3.76** | 69.99 | 14.76 |
+| 2 | LSTM uncapped | 23.48 | 36.28 ± 3.14 | **62.96** | 23.78 |
+| 2 | LSTM capped | 21.25 | 39.79 ± 0.59 | 81.35 | **12.72** |
+| 2 | 1D CNN uncapped | 25.43 | 40.14 ± 1.69 | 72.75 | 23.78 |
+| 2 | 1D CNN capped | 23.66 | 42.03 ± 1.13 | 84.99 | 15.02 |
+| 2 | **Two-stage hybrid (final)** | 20.32 | **34.78 ± 2.27** | 68.40 | 15.15 |
+| 2 | Capped LSTM + GB fallback | **19.91** | 35.22 ± 1.28 | 69.84 | 14.61 |
 
 ### Test (100 engines: 11 early, 89 late), scored once
 
@@ -61,24 +62,26 @@ Phase 1 rows are single runs. Phase 2 rows are the mean of 5 seeds (± = spread 
 | 1 | Elastic Net | 23.61 | 29.04 | 20.60 | 29.92 |
 | 1 | Random Forest | 18.95 | 25.88 | 25.80 | 25.89 |
 | 1 | Gradient boosting | 18.54 | 25.33 | 22.98 | 25.61 |
-| 2 | LSTM uncapped | 19.55 | 28.16 ± 2.34 | 31.88 | 27.49 |
-| 2 | LSTM capped | **11.65** | **15.55 ± 0.86** | 24.22 | **14.09** |
-| 2 | 1D CNN uncapped | 18.79 | 24.96 ± 3.17 | **17.91** | 25.69 |
-| 2 | 1D CNN capped | 12.88 | 16.66 ± 0.81 | 26.40 | 14.97 |
-| 2 | **Two-stage hybrid (final)** | 15.48 | 23.11 ± 1.33 | 30.14 | 21.91 |
+| 2 | LSTM uncapped | 19.70 | 28.52 ± 2.66 | 33.78 | 27.62 |
+| 2 | LSTM capped | **11.13** | **14.76 ± 0.26** | 23.14 | **13.36** |
+| 2 | 1D CNN uncapped | 18.13 | 24.21 ± 2.58 | **17.34** | 24.92 |
+| 2 | 1D CNN capped | 13.13 | 16.83 ± 0.86 | 26.24 | 15.20 |
+| 2 | **Two-stage hybrid (final)** | 14.70 | 22.19 ± 1.74 | 30.46 | 20.84 |
+| 2 | Capped LSTM + GB fallback | 14.08 | 20.14 ± 0.76 | 23.48 | 19.68 |
 
 ### What the results say
 
 1. **Phase 2 fixes the Phase 1 gap on late points.** Every capped sequence model roughly halves the error near failure: 12–15 vs 26 for gradient boosting, on both validation and test.
-2. **The final model beats every Phase 1 model** on both sets: 35.34 vs 40.17 on validation, 23.11 vs 25.33 on test.
-3. **Validation and test disagree on the single best model.** On test, the capped LSTM alone is best (15.55, 39% below gradient boosting). The two sets contain different engines:
+2. **The final model beats every Phase 1 model** on both sets: 34.78 vs 40.17 on validation, 22.19 vs 25.33 on test.
+3. **Validation and test disagree on the single best model.** On test, the capped LSTM alone is best (14.76, 42% below gradient boosting). The two sets contain different engines:
    - validation has 22 far-from-failure points with true RUL up to **329**;
    - test has only 11, and its largest true RUL is **145**.
 
    A capped model can't be badly wrong when nothing is far from failure, so this test set favours capping. We did **not** switch models after seeing the test numbers; doing so would make the test score meaningless.
-4. **Far-from-failure points stay hard for every model** (validation early RMSE 64–85). A healthy engine looks the same with 200 or 300 cycles left. This is a limit of the data, not of the models.
-5. **LSTM vs CNN:** the LSTM wins clearly on validation (late 12.16 vs 14.46). On test the two capped models are tied (14.09 vs 14.97, a gap smaller than the seed spread).
-6. **Sanity check:** the capped LSTM's test RMSE (15.55) sits in the range published for FD001 LSTMs (about 15–16), so the pipeline behaves as expected.
+4. **Far-from-failure points stay hard for every model** (validation early RMSE 63–85). A healthy engine looks the same with 200 or 300 cycles left. This is a limit of the data, not of the models.
+5. **LSTM vs CNN:** the LSTM wins on validation (late 12.72 vs 15.02) and stays ahead on test (late 13.36 vs 15.20).
+6. **Sanity check:** the capped LSTM's test RMSE (14.76) is close to published FD001 LSTM results (about 15–16), so the pipeline behaves as expected.
+7. **GB fallback:** handing healthy engines to gradient boosting instead of the uncapped LSTM ties the hybrid on validation (35.22 vs 34.78) and is steadier between seeds (± 1.28 vs ± 2.27). On test its NASA score is 3,030 vs 16,337 for the hybrid, because gradient boosting over-predicts far less.
 
 ---
 
@@ -105,7 +108,7 @@ Every choice below was made on **validation only**. The test set was scored once
 | Short histories padded with the engine's **first row** | Repeating the first (healthiest) reading means "no change yet". | Zero padding: after scaling, 0 means "average reading", not "no data". |
 | **Early stopping** on 16 of the 80 training engines | Training stops when it stops improving on engines it doesn't learn from, and validation stays clean for choosing settings. | Early stopping on validation: validation would be used twice. |
 | Learning rate halves when progress stalls; gradient clipping | Standard, stable recipe in C-MAPSS papers. | — |
-| **5 seeds**, mean ± spread | Results move noticeably between seeds (uncapped LSTM: ± 3.8). One seed can crown a lucky model. | Single-seed results. |
+| **5 seeds**, mean ± spread | Results move noticeably between seeds (uncapped LSTM: ± 3.1). One seed can crown a lucky model. | Single-seed results. |
 
 ### Settings chosen on validation
 
@@ -120,14 +123,14 @@ Also tried and rejected on validation: RMSprop (worse for both), dropout 0.5 (wo
 
 | Decision | Why | Not chosen, and why |
 | --- | --- | --- |
-| A **single capped model is not the final model** | Our pre-registered cap rule (from Phase 1): adopt capping only if overall RMSE is no worse **and** late RMSE is better. Capped LSTM: late much better (12.16 vs 23.22) but overall worse (39.62 vs 36.47), so it fails. | — |
+| A **single capped model is not the final model** | Our pre-registered cap rule (from Phase 1): adopt capping only if overall RMSE is no worse **and** late RMSE is better. Capped LSTM: late much better (12.72 vs 23.78) but overall worse (39.79 vs 36.28), so it fails. | — |
 | **Two-stage** design | Combines the strengths of the capped model (late points) and the uncapped model (far-from-failure points). It passes the cap rule: better overall and better late. | — |
-| Gate = the **capped LSTM's own prediction** | Missed only 3–11 late points per seed on validation, almost all with true RUL 99–121, close to the 125 line. | A separate early/late classifier: 77% accurate, but it called 17 of 78 late points "healthy" and raised late RMSE to 18.4. |
+| Gate = the **capped LSTM's own prediction** | Missed only 3–6 late points per seed on validation, all with true RUL 89–121, close to the 125 line. | A separate early/late classifier: 77% accurate, but it called 17 of 78 late points "healthy" and raised late RMSE to 18.4. |
 | Gate threshold **115** | Tried 100 / 110 / 115 / 120. 115 balanced few missed late points against how often the hand-off triggers. | 125: the capped model almost never predicts above ~123, so the gate would never fire. |
 
 ### Known weakness
 
-The gate is less reliable on test. Per seed, 10–18 late test engines were handed to the uncapped model, true RUL 77–121, most of them above 100. That's why the hybrid's test late RMSE (21.91) is higher than the capped LSTM's (14.09).
+The gate is less reliable on test. Per seed, 8–14 late test engines were handed to the uncapped model, true RUL 77–121, most of them above 100. That's why the hybrid's test late RMSE (20.84) is higher than the capped LSTM's (13.36).
 
 ---
 

@@ -8,16 +8,73 @@ Phase 1 rules are unchanged: same 80 training / 20 validation engines, same 100 
 
 ## Contents
 
-1. [Words used here](#words-used-here)
-2. [Metrics](#metrics)
-3. [Models we built](#models-we-built)
-4. [Final model: two-stage hybrid](#final-model-two-stage-hybrid)
-5. [Results: every model, every metric](#results-every-model-every-metric)
-6. [What the results say](#what-the-results-say)
-7. [Decisions](#decisions)
-8. [Known weaknesses](#known-weaknesses)
-9. [Where the numbers come from](#where-the-numbers-come-from)
-10. [Questions for the team](#questions-for-the-team)
+1. [Show the code](#show-the-code)
+2. [Words used here](#words-used-here)
+3. [Metrics](#metrics)
+4. [Models we built](#models-we-built)
+5. [Final model: two-stage hybrid](#final-model-two-stage-hybrid)
+6. [Results: every model, every metric](#results-every-model-every-metric)
+7. [What the results say](#what-the-results-say)
+8. [Decisions](#decisions)
+9. [Known weaknesses](#known-weaknesses)
+10. [Where the numbers come from](#where-the-numbers-come-from)
+11. [Questions for the team](#questions-for-the-team)
+
+## Show the code
+
+Click a notebook to see its code, tables and plots on GitHub. To run one live, see [How to run](#how-to-run) below.
+
+### Results and decisions
+
+| Question someone may ask | Notebook | Section |
+| --- | --- | --- |
+| How are the sensor windows built? What does one look like? | [06](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/06_sequences.ipynb) | 3. Build the windows · 5. What a window looks like |
+| How many windows need padding? | [06](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/06_sequences.ipynb) | 6. How many windows need padding |
+| Show the training curve and early stopping | [07](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) | 1. Training curve |
+| Why window 30 and 2 × 64 for the uncapped LSTM? | [07](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) | 2. Window length · 3. Size |
+| Did CNN-LSTM help? | [07](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) | 4. CNN-LSTM check |
+| Final uncapped LSTM (5 seeds) | [07](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) | 5. Final model |
+| What does capping do? | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 1. What capping does |
+| Why window 70 for the capped LSTM? | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 2. Window length for the capped LSTM |
+| Final capped LSTM (5 seeds) | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 3. Final capped LSTM |
+| 1D CNN results | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 4. 1D CNN |
+| RNN vs GRU vs LSTM | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 5. Memory ladder |
+| How many weights does each model have? | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 6. Number of trainable weights |
+| Why isn't the capped LSTM the final model? (cap rule) | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 2. Cap rule |
+| Why gate at 115? | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 3. Gate threshold |
+| How is the hybrid built? | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 4. Hybrid prediction files |
+| Why not a separate classifier? | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 5. Rejected design: a separate early/late classifier |
+| Do ML + DL blends help? GB fallback? | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 6. ML + DL combinations |
+| Every model, every metric, validation and test | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 3. Final table |
+| Adjusted R² | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 3. Final table → Adjusted R² (OLS only) |
+| Figure: every model, overall and near-failure error | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 4. Figure 1 |
+| Predicted vs true on test | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 5. Figure 2 |
+| Why do validation and test disagree? | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 6. Figure 3 |
+| How often does the gate miss? Why is the NASA score high? | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 7. Missed late (hybrid) |
+
+### Model and training code
+
+| What | File |
+| --- | --- |
+| Windows, scaling, padding, early-stopping engines | [`src/sequences.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/sequences.py) |
+| Training recipe (Adam, early stopping, seeds, scoring) | [`src/train.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/train.py) |
+| LSTM and CNN-LSTM | [`src/models_lstm.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/models_lstm.py) |
+| RNN and GRU | [`src/models_rnn_gru.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/models_rnn_gru.py) |
+| 1D CNN | [`src/models_cnn.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/models_cnn.py) |
+| Phase 1 split, validation points, MAE / RMSE | [`src/evaluation.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/evaluation.py) |
+
+### How to run
+
+From the repo root (Python 3, packages in `requirements.txt`):
+
+```bash
+pip install -r requirements.txt
+jupyter notebook notebooks/10_final_comparison.ipynb
+```
+
+Run notebooks in order (06 → 10); each one reads the files the earlier ones write to `results/`. Notebook 10 only reads prediction files, so it runs in seconds; 07–09 train models and take a few minutes per section.
+
+---
 
 ## Words used here
 
@@ -100,55 +157,57 @@ last 70 cycles ──> capped LSTM ──> prediction p
 
 Phase 1 rows are single runs (they give the same answer every time). Phase 2 rows are the mean of 5 seeds, ± = sample std of RMSE between seeds. Errors are in cycles.
 
+The **Code** column links each model to the notebook and section (§) that builds it. Every row is also scored in [notebook 10 §3](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb).
+
 ### Validation (100 points: 22 early, 78 late)
 
-| Group | Model | MAE | RMSE | R² | Early RMSE | Late RMSE | Late precision | Late recall | Late F1 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Phase 1 | OLS | 32.86 | 42.92 | 0.499 | 64.87 | 34.27 | 0.89 | 0.76 | 0.82 |
-| Phase 1 | Elastic Net | 31.66 | 41.77 | 0.525 | 66.02 | 31.74 | 0.91 | 0.79 | 0.85 |
-| Phase 1 | Random Forest | 25.03 | 40.17 | 0.561 | 69.59 | 26.50 | 0.88 | 0.86 | 0.87 |
-| Phase 1 | Gradient boosting | 26.12 | 40.17 | 0.561 | 69.54 | 26.54 | 0.88 | 0.86 | 0.87 |
-| Uncapped | LSTM | 23.48 | 36.28 ± 3.14 | 0.640 | 62.96 | 23.78 | 0.93 | 0.86 | 0.89 |
-| Uncapped | GRU | 22.82 | 35.76 ± 0.53 | 0.652 | 62.57 | 23.07 | 0.94 | 0.88 | 0.91 |
-| Uncapped | RNN | 27.05 | 39.40 ± 2.68 | 0.576 | 62.16 | 29.72 | 0.94 | 0.82 | 0.87 |
-| Uncapped | 1D CNN | 25.43 | 40.14 ± 1.69 | 0.561 | 72.75 | 23.78 | 0.90 | 0.93 | 0.91 |
-| Uncapped | CNN-LSTM | 24.02 | 37.33 ± 1.11 | 0.620 | 64.52 | 24.62 | 0.93 | 0.87 | 0.89 |
-| Capped | LSTM | 21.25 | 39.79 ± 0.59 | 0.569 | 81.35 | 12.72 | 0.79 | 1.00 | 0.88 |
-| Capped | GRU | 21.25 | 39.38 ± 0.68 | 0.578 | 79.95 | 13.55 | 0.79 | 0.99 | 0.88 |
-| Capped | RNN | 24.43 | 41.96 ± 0.69 | 0.521 | 82.56 | 18.29 | 0.78 | 0.99 | 0.87 |
-| Capped | 1D CNN | 23.66 | 42.03 ± 1.13 | 0.519 | 84.99 | 15.02 | 0.80 | 0.99 | 0.88 |
-| Capped | CNN-LSTM | 21.32 | 39.76 ± 1.27 | 0.569 | 80.55 | 13.95 | 0.80 | 0.99 | 0.89 |
-| Two-stage | **Two-stage hybrid (final)** | 20.32 | 34.78 ± 2.27 | 0.670 | 68.40 | 15.15 | 0.87 | 0.95 | 0.91 |
-| Two-stage | Capped LSTM + GB fallback | 19.91 | 35.22 ± 1.28 | 0.662 | 69.84 | 14.61 | 0.86 | 0.96 | 0.90 |
-| Two-stage | Classifier + late regressor | 23.22 | 40.33 ± 1.24 | 0.557 | 78.83 | 18.17 | 0.78 | 1.00 | 0.88 |
-| Blend | 0.2·GB + 0.8·LSTM uncapped | 23.53 | 35.98 ± 2.43 | 0.646 | 63.43 | 22.85 | 0.91 | 0.87 | 0.89 |
-| Blend | 0.1·GB + 0.9·Two-stage hybrid | 20.34 | 34.71 ± 1.95 | 0.671 | 68.03 | 15.39 | 0.87 | 0.95 | 0.91 |
-| Blend | 0.5·GB + 0.5·LSTM capped | 22.44 | 38.29 ± 0.37 | 0.601 | 74.32 | 17.93 | 0.88 | 0.91 | 0.89 |
+| Group | Model | MAE | RMSE | R² | Early RMSE | Late RMSE | Late precision | Late recall | Late F1 | Code |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Phase 1 | OLS | 32.86 | 42.92 | 0.499 | 64.87 | 34.27 | 0.89 | 0.76 | 0.82 | [03](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/03_linear_models.ipynb) |
+| Phase 1 | Elastic Net | 31.66 | 41.77 | 0.525 | 66.02 | 31.74 | 0.91 | 0.79 | 0.85 | [03](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/03_linear_models.ipynb) |
+| Phase 1 | Random Forest | 25.03 | 40.17 | 0.561 | 69.59 | 26.50 | 0.88 | 0.86 | 0.87 | [04](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/04_tree_models.ipynb) |
+| Phase 1 | Gradient boosting | 26.12 | 40.17 | 0.561 | 69.54 | 26.54 | 0.88 | 0.86 | 0.87 | [04](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/04_tree_models.ipynb) |
+| Uncapped | LSTM | 23.48 | 36.28 ± 3.14 | 0.640 | 62.96 | 23.78 | 0.93 | 0.86 | 0.89 | [07 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) |
+| Uncapped | GRU | 22.82 | 35.76 ± 0.53 | 0.652 | 62.57 | 23.07 | 0.94 | 0.88 | 0.91 | [08 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Uncapped | RNN | 27.05 | 39.40 ± 2.68 | 0.576 | 62.16 | 29.72 | 0.94 | 0.82 | 0.87 | [08 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Uncapped | 1D CNN | 25.43 | 40.14 ± 1.69 | 0.561 | 72.75 | 23.78 | 0.90 | 0.93 | 0.91 | [08 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Uncapped | CNN-LSTM | 24.02 | 37.33 ± 1.11 | 0.620 | 64.52 | 24.62 | 0.93 | 0.87 | 0.89 | [07 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) |
+| Capped | LSTM | 21.25 | 39.79 ± 0.59 | 0.569 | 81.35 | 12.72 | 0.79 | 1.00 | 0.88 | [08 §3](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Capped | GRU | 21.25 | 39.38 ± 0.68 | 0.578 | 79.95 | 13.55 | 0.79 | 0.99 | 0.88 | [08 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Capped | RNN | 24.43 | 41.96 ± 0.69 | 0.521 | 82.56 | 18.29 | 0.78 | 0.99 | 0.87 | [08 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Capped | 1D CNN | 23.66 | 42.03 ± 1.13 | 0.519 | 84.99 | 15.02 | 0.80 | 0.99 | 0.88 | [08 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Capped | CNN-LSTM | 21.32 | 39.76 ± 1.27 | 0.569 | 80.55 | 13.95 | 0.80 | 0.99 | 0.89 | [07 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) |
+| Two-stage | **Two-stage hybrid (final)** | 20.32 | 34.78 ± 2.27 | 0.670 | 68.40 | 15.15 | 0.87 | 0.95 | 0.91 | [09 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Two-stage | Capped LSTM + GB fallback | 19.91 | 35.22 ± 1.28 | 0.662 | 69.84 | 14.61 | 0.86 | 0.96 | 0.90 | [09 §6](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Two-stage | Classifier + late regressor | 23.22 | 40.33 ± 1.24 | 0.557 | 78.83 | 18.17 | 0.78 | 1.00 | 0.88 | [09 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Blend | 0.2·GB + 0.8·LSTM uncapped | 23.53 | 35.98 ± 2.43 | 0.646 | 63.43 | 22.85 | 0.91 | 0.87 | 0.89 | [09 §6](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Blend | 0.1·GB + 0.9·Two-stage hybrid | 20.34 | 34.71 ± 1.95 | 0.671 | 68.03 | 15.39 | 0.87 | 0.95 | 0.91 | [09 §6](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Blend | 0.5·GB + 0.5·LSTM capped | 22.44 | 38.29 ± 0.37 | 0.601 | 74.32 | 17.93 | 0.88 | 0.91 | 0.89 | [09 §6](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
 
 ### Test (100 engines: 11 early, 89 late), scored once
 
-| Group | Model | MAE | RMSE | R² | Early RMSE | Late RMSE | Late precision | Late recall | Late F1 | NASA score |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Phase 1 | OLS | 24.91 | 31.17 | 0.437 | 23.00 | 32.04 | 0.96 | 0.79 | 0.86 | 11,407 |
-| Phase 1 | Elastic Net | 23.61 | 29.04 | 0.512 | 20.60 | 29.92 | 0.96 | 0.78 | 0.86 | 5,620 |
-| Phase 1 | Random Forest | 18.95 | 25.88 | 0.612 | 25.80 | 25.89 | 0.92 | 0.80 | 0.86 | 6,048 |
-| Phase 1 | Gradient boosting | 18.54 | 25.33 | 0.628 | 22.98 | 25.61 | 0.94 | 0.81 | 0.87 | 4,813 |
-| Uncapped | LSTM | 19.70 | 28.52 ± 2.66 | 0.526 | 33.78 | 27.62 | 0.96 | 0.80 | 0.87 | 32,544 |
-| Uncapped | GRU | 18.47 | 26.99 ± 2.69 | 0.575 | 21.68 | 27.55 | 0.98 | 0.78 | 0.87 | 16,470 |
-| Uncapped | RNN | 23.94 | 32.71 ± 2.62 | 0.377 | 22.88 | 33.67 | 0.98 | 0.70 | 0.82 | 54,422 |
-| Uncapped | 1D CNN | 18.13 | 24.21 ± 2.58 | 0.657 | 17.34 | 24.92 | 0.95 | 0.82 | 0.88 | 4,996 |
-| Uncapped | CNN-LSTM | 18.86 | 25.94 ± 3.35 | 0.605 | 21.66 | 26.35 | 0.96 | 0.76 | 0.85 | 9,550 |
-| Capped | LSTM | 11.13 | 14.76 ± 0.26 | 0.874 | 23.14 | 13.36 | 0.89 | 0.99 | 0.94 | 343 |
-| Capped | GRU | 11.25 | 14.93 ± 1.08 | 0.870 | 22.00 | 13.78 | 0.89 | 0.98 | 0.93 | 354 |
-| Capped | RNN | 13.33 | 17.99 ± 1.41 | 0.812 | 23.66 | 17.14 | 0.89 | 1.00 | 0.94 | 903 |
-| Capped | 1D CNN | 13.13 | 16.83 ± 0.86 | 0.836 | 26.24 | 15.20 | 0.90 | 0.96 | 0.93 | 490 |
-| Capped | CNN-LSTM | 11.97 | 15.74 ± 1.01 | 0.856 | 21.70 | 14.77 | 0.90 | 0.97 | 0.93 | 424 |
-| Two-stage | **Two-stage hybrid (final)** | 14.70 | 22.19 ± 1.74 | 0.714 | 30.46 | 20.84 | 0.92 | 0.91 | 0.91 | 16,337 |
-| Two-stage | Capped LSTM + GB fallback | 14.08 | 20.14 ± 0.76 | 0.765 | 23.48 | 19.68 | 0.92 | 0.89 | 0.91 | 3,030 |
-| Two-stage | Classifier + late regressor | 12.71 | 18.19 ± 0.92 | 0.808 | 23.33 | 17.37 | 0.89 | 1.00 | 0.94 | 1,195 |
-| Blend | 0.2·GB + 0.8·LSTM uncapped | 18.48 | 26.24 ± 2.13 | 0.599 | 28.20 | 25.87 | 0.96 | 0.80 | 0.87 | 12,735 |
-| Blend | 0.1·GB + 0.9·Two-stage hybrid | 14.51 | 21.74 ± 1.53 | 0.725 | 28.74 | 20.64 | 0.92 | 0.90 | 0.91 | 10,011 |
-| Blend | 0.5·GB + 0.5·LSTM capped | 13.12 | 17.76 ± 0.18 | 0.817 | 18.38 | 17.68 | 0.92 | 0.84 | 0.88 | 786 |
+| Group | Model | MAE | RMSE | R² | Early RMSE | Late RMSE | Late precision | Late recall | Late F1 | NASA score | Code |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Phase 1 | OLS | 24.91 | 31.17 | 0.437 | 23.00 | 32.04 | 0.96 | 0.79 | 0.86 | 11,407 | [03](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/03_linear_models.ipynb) |
+| Phase 1 | Elastic Net | 23.61 | 29.04 | 0.512 | 20.60 | 29.92 | 0.96 | 0.78 | 0.86 | 5,620 | [03](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/03_linear_models.ipynb) |
+| Phase 1 | Random Forest | 18.95 | 25.88 | 0.612 | 25.80 | 25.89 | 0.92 | 0.80 | 0.86 | 6,048 | [04](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/04_tree_models.ipynb) |
+| Phase 1 | Gradient boosting | 18.54 | 25.33 | 0.628 | 22.98 | 25.61 | 0.94 | 0.81 | 0.87 | 4,813 | [04](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/04_tree_models.ipynb) |
+| Uncapped | LSTM | 19.70 | 28.52 ± 2.66 | 0.526 | 33.78 | 27.62 | 0.96 | 0.80 | 0.87 | 32,544 | [07 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) |
+| Uncapped | GRU | 18.47 | 26.99 ± 2.69 | 0.575 | 21.68 | 27.55 | 0.98 | 0.78 | 0.87 | 16,470 | [08 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Uncapped | RNN | 23.94 | 32.71 ± 2.62 | 0.377 | 22.88 | 33.67 | 0.98 | 0.70 | 0.82 | 54,422 | [08 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Uncapped | 1D CNN | 18.13 | 24.21 ± 2.58 | 0.657 | 17.34 | 24.92 | 0.95 | 0.82 | 0.88 | 4,996 | [08 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Uncapped | CNN-LSTM | 18.86 | 25.94 ± 3.35 | 0.605 | 21.66 | 26.35 | 0.96 | 0.76 | 0.85 | 9,550 | [07 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) |
+| Capped | LSTM | 11.13 | 14.76 ± 0.26 | 0.874 | 23.14 | 13.36 | 0.89 | 0.99 | 0.94 | 343 | [08 §3](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Capped | GRU | 11.25 | 14.93 ± 1.08 | 0.870 | 22.00 | 13.78 | 0.89 | 0.98 | 0.93 | 354 | [08 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Capped | RNN | 13.33 | 17.99 ± 1.41 | 0.812 | 23.66 | 17.14 | 0.89 | 1.00 | 0.94 | 903 | [08 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Capped | 1D CNN | 13.13 | 16.83 ± 0.86 | 0.836 | 26.24 | 15.20 | 0.90 | 0.96 | 0.93 | 490 | [08 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) |
+| Capped | CNN-LSTM | 11.97 | 15.74 ± 1.01 | 0.856 | 21.70 | 14.77 | 0.90 | 0.97 | 0.93 | 424 | [07 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) |
+| Two-stage | **Two-stage hybrid (final)** | 14.70 | 22.19 ± 1.74 | 0.714 | 30.46 | 20.84 | 0.92 | 0.91 | 0.91 | 16,337 | [09 §4](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Two-stage | Capped LSTM + GB fallback | 14.08 | 20.14 ± 0.76 | 0.765 | 23.48 | 19.68 | 0.92 | 0.89 | 0.91 | 3,030 | [09 §6](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Two-stage | Classifier + late regressor | 12.71 | 18.19 ± 0.92 | 0.808 | 23.33 | 17.37 | 0.89 | 1.00 | 0.94 | 1,195 | [09 §5](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Blend | 0.2·GB + 0.8·LSTM uncapped | 18.48 | 26.24 ± 2.13 | 0.599 | 28.20 | 25.87 | 0.96 | 0.80 | 0.87 | 12,735 | [09 §6](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Blend | 0.1·GB + 0.9·Two-stage hybrid | 14.51 | 21.74 ± 1.53 | 0.725 | 28.74 | 20.64 | 0.92 | 0.90 | 0.91 | 10,011 | [09 §6](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
+| Blend | 0.5·GB + 0.5·LSTM capped | 13.12 | 17.76 ± 0.18 | 0.817 | 18.38 | 17.68 | 0.92 | 0.84 | 0.88 | 786 | [09 §6](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) |
 
 ---
 
@@ -234,7 +293,7 @@ Also tried and rejected: RMSprop (worse for both), dropout 0.5 (worse, unstable)
 
 - Each Phase 2 model is scored per seed (5 seeds) and averaged; validation rows follow `data/validation_cutoffs.csv`, test rows follow engine id.
 - LSTM, 1D CNN, hybrid and GB-fallback numbers come from the prediction files made by notebooks 07, 08 and 09. GRU, RNN, CNN-LSTM and classifier numbers come from the Phase 2 exploration runs with the same settings and seeds; the GRU and RNN validation scores match notebook 08's 5-seed ladder exactly. Blends use the weights in `results/experiments_blends.csv`.
-- The final comparison notebook (notebook 10) will reproduce these tables in the repo.
+- Notebook [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) reproduces every table above from the prediction files in `results/` (section 3), and writes `results/final_results_phase2.csv`.
 - Experiments behind each setting: `results/experiments_*.csv`.
 
 ---

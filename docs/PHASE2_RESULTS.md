@@ -8,16 +8,73 @@ Phase 1 rules are unchanged: same 80 training / 20 validation engines, same 100 
 
 ## Contents
 
-1. [Words used here](#words-used-here)
-2. [Metrics](#metrics)
-3. [Models we built](#models-we-built)
-4. [Final model: two-stage hybrid](#final-model-two-stage-hybrid)
-5. [Results: every model, every metric](#results-every-model-every-metric)
-6. [What the results say](#what-the-results-say)
-7. [Decisions](#decisions)
-8. [Known weaknesses](#known-weaknesses)
-9. [Where the numbers come from](#where-the-numbers-come-from)
-10. [Questions for the team](#questions-for-the-team)
+1. [Show the code](#show-the-code)
+2. [Words used here](#words-used-here)
+3. [Metrics](#metrics)
+4. [Models we built](#models-we-built)
+5. [Final model: two-stage hybrid](#final-model-two-stage-hybrid)
+6. [Results: every model, every metric](#results-every-model-every-metric)
+7. [What the results say](#what-the-results-say)
+8. [Decisions](#decisions)
+9. [Known weaknesses](#known-weaknesses)
+10. [Where the numbers come from](#where-the-numbers-come-from)
+11. [Questions for the team](#questions-for-the-team)
+
+## Show the code
+
+Click a notebook to see its code, tables and plots on GitHub. To run one live, see [How to run](#how-to-run) below.
+
+### Results and decisions
+
+| Question someone may ask | Notebook | Section |
+| --- | --- | --- |
+| How are the sensor windows built? What does one look like? | [06](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/06_sequences.ipynb) | 3. Build the windows · 5. What a window looks like |
+| How many windows need padding? | [06](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/06_sequences.ipynb) | 6. How many windows need padding |
+| Show the training curve and early stopping | [07](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) | 1. Training curve |
+| Why window 30 and 2 × 64 for the uncapped LSTM? | [07](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) | 2. Window length · 3. Size |
+| Did CNN-LSTM help? | [07](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) | 4. CNN-LSTM check |
+| Final uncapped LSTM (5 seeds) | [07](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/07_uncapped_lstm.ipynb) | 5. Final model |
+| What does capping do? | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 1. What capping does |
+| Why window 70 for the capped LSTM? | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 2. Window length for the capped LSTM |
+| Final capped LSTM (5 seeds) | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 3. Final capped LSTM |
+| 1D CNN results | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 4. 1D CNN |
+| RNN vs GRU vs LSTM | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 5. Memory ladder |
+| How many weights does each model have? | [08](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/08_capped_lstm_and_cnn.ipynb) | 6. Number of trainable weights |
+| Why isn't the capped LSTM the final model? (cap rule) | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 2. Cap rule |
+| Why gate at 115? | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 3. Gate threshold |
+| How is the hybrid built? | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 4. Hybrid prediction files |
+| Why not a separate classifier? | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 5. Rejected design: a separate early/late classifier |
+| Do ML + DL blends help? GB fallback? | [09](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/09_two_stage_hybrid.ipynb) | 6. ML + DL combinations |
+| Every model, every metric, validation and test | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 3. Final table |
+| Adjusted R² | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 3. Final table → Adjusted R² (OLS only) |
+| Figure: every model, overall and near-failure error | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 4. Figure 1 |
+| Predicted vs true on test | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 5. Figure 2 |
+| Why do validation and test disagree? | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 6. Figure 3 |
+| How often does the gate miss? Why is the NASA score high? | [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) | 7. Missed late (hybrid) |
+
+### Model and training code
+
+| What | File |
+| --- | --- |
+| Windows, scaling, padding, early-stopping engines | [`src/sequences.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/sequences.py) |
+| Training recipe (Adam, early stopping, seeds, scoring) | [`src/train.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/train.py) |
+| LSTM and CNN-LSTM | [`src/models_lstm.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/models_lstm.py) |
+| RNN and GRU | [`src/models_rnn_gru.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/models_rnn_gru.py) |
+| 1D CNN | [`src/models_cnn.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/models_cnn.py) |
+| Phase 1 split, validation points, MAE / RMSE | [`src/evaluation.py`](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/src/evaluation.py) |
+
+### How to run
+
+From the repo root (Python 3, packages in `requirements.txt`):
+
+```bash
+pip install -r requirements.txt
+jupyter notebook notebooks/10_final_comparison.ipynb
+```
+
+Run notebooks in order (06 → 10); each one reads the files the earlier ones write to `results/`. Notebook 10 only reads prediction files, so it runs in seconds; 07–09 train models and take a few minutes per section.
+
+---
 
 ## Words used here
 
@@ -234,7 +291,7 @@ Also tried and rejected: RMSprop (worse for both), dropout 0.5 (worse, unstable)
 
 - Each Phase 2 model is scored per seed (5 seeds) and averaged; validation rows follow `data/validation_cutoffs.csv`, test rows follow engine id.
 - LSTM, 1D CNN, hybrid and GB-fallback numbers come from the prediction files made by notebooks 07, 08 and 09. GRU, RNN, CNN-LSTM and classifier numbers come from the Phase 2 exploration runs with the same settings and seeds; the GRU and RNN validation scores match notebook 08's 5-seed ladder exactly. Blends use the weights in `results/experiments_blends.csv`.
-- The final comparison notebook (notebook 10) will reproduce these tables in the repo.
+- Notebook [10](https://github.com/Abhayanthk/aml-rul-fd001/blob/main/notebooks/10_final_comparison.ipynb) reproduces every table above from the prediction files in `results/` (section 3), and writes `results/final_results_phase2.csv`.
 - Experiments behind each setting: `results/experiments_*.csv`.
 
 ---

@@ -49,12 +49,14 @@ results/                      predictions and final results (written by the note
 report/
   RUL_Report.pdf              project report
   RUL_Presentation.pdf        presentation slides
+  RUL_Presentation_Phase2.pdf Phase 2 presentation slides
 ```
 
 ## Report
 
 - [Project report](report/RUL_Report.pdf)
 - [Presentation slides](report/RUL_Presentation.pdf)
+- [Phase 2 presentation slides](report/RUL_Presentation_Phase2.pdf)
 
 ## How to run
 
